@@ -18,6 +18,3 @@ while game.game_state == GameState.RUNNING:
     clock.tick(25)
     game.update()
     pygame.display.flip()
-
-#  adsdasdsadaddad111
-55555
