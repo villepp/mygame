@@ -3,6 +3,7 @@ import config
 from game_state import GameState
 from game import Game
 
+
 pygame.init()
 
 screen = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
@@ -14,6 +15,7 @@ clock = pygame.time.Clock()
 game = Game(screen)
 game.set_up()
 
+# todo - this should handle menus at some point
 while game.game_state == GameState.RUNNING:
     clock.tick(25)
     game.update()
