@@ -1,16 +1,13 @@
 import random
-
 import pygame
 import config
-import math
-import utilities
 from events import game_event_handler
-
 from player import Player
 from game_state import GameState, CurrentGameState
 from monsterfactory import MonsterFactory
 from game_view.map import Map
 from game_view.battle import Battle
+import utilities
 
 
 class Game:
@@ -27,47 +24,48 @@ class Game:
         self.event = None
 
     def set_up(self):
-        player = Player(1, 1)
-        self.player = player
+        self.player = Player(1, 1)
         print("do set up")
         self.game_state = GameState.RUNNING
-
         self.map.load("01", self.player)
 
     def update(self):
         if self.current_game_state == CurrentGameState.MAP:
-            self.player_has_moved = False
-            self.screen.fill(config.BLACK)
-            # print("update")
-            self.handle_events()
-            
-            if self.player_has_moved:
-                self.determine_game_events()
-
-            self.map.render(self.screen, self.player)
-
+            self.update_map_state()
         elif self.current_game_state == CurrentGameState.BATTLE:
-            self.battle.update()
-            self.battle.render()
+            self.update_battle_state()
 
-            if self.battle.monster.health <= 0:
-                self.current_game_state = CurrentGameState.MAP
-                
-        if self.event is not None:
+        if self.event:
             self.event.render()
             self.event.update()
 
+    def update_map_state(self):
+        self.player_has_moved = False
+        self.screen.fill(config.BLACK)
+        self.handle_events()
+
+        if self.player_has_moved:
+            self.determine_game_events()
+
+        self.map.render(self.screen, self.player)
+
+    def update_battle_state(self):
+        self.battle.update()
+        self.battle.render()
+        if self.battle.monster.health <= 0:
+            self.current_game_state = CurrentGameState.MAP
 
     def determine_game_events(self):
-        map_tile = self.map.map_array[self.player.position[1]][self.player.position[0]]
+        map_tile = self.map.map_array[self.player.position[1]
+                                      ][self.player.position[0]]
         print(map_tile)
-        
+
         if map_tile == config.MAP_TILE_ROOM_EXIT:
             self.player.position = self.map.player_exit_position[:]
             self.maps.pop()
             self.map = self.maps[-1]
             return
-        
+
         # if the map tile is a door, we need a room
         if utilities.test_if_int(map_tile):
             room = Map(self.screen)
@@ -75,21 +73,21 @@ class Game:
             self.map = room
             self.maps.append(room)
             return
-        
+
         for npc in self.map.objects:
             if npc == self.map.player:
                 continue
-            
+
             if npc.position[:] == self.map.player.position[:]:
                 game_event_handler.handle(self, self.player, npc)
-                
+
         for exit_position in self.map.exit_positions:
             if self.player.position[:] == exit_position['position'][:]:
                 map_file = exit_position['map']
                 map = Map(self.screen)
-                
+
                 config.MAP_CONFIG[map_file]['start_position'] = exit_position['new_start_position'][:]
-                
+
                 map.load(map_file, self.player)
                 self.maps.pop()
                 self.map = map
@@ -100,8 +98,8 @@ class Game:
 
     def determine_monster_found(self, map_tile):
         if map_tile not in config.MONSTER_TYPES:
-            return 
-        
+            return
+
         random_number = utilities.generate_random_number(1, 10)
 
         # 20 percent chance of hitting monster
@@ -116,37 +114,39 @@ class Game:
             self.current_game_state = CurrentGameState.BATTLE
 
     def handle_events(self):
-        if self.event is not None:
+        if self.event:
             return
-            
+
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.game_state = GameState.ENDED
-            #     handle key events
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
-                    self.game_state = GameState.NONE
-                elif event.key == pygame.K_w: # up
-                    self.move_unit(self.player, [0, -1])
-                elif event.key == pygame.K_s: # down
-                    self.move_unit(self.player, [0, 1])
-                elif event.key == pygame.K_a: # left
-                    self.move_unit(self.player, [-1, 0])
-                elif event.key == pygame.K_d: # right
-                    self.move_unit(self.player, [1, 0])
-                #these are for debug
-                elif event.key == pygame.K_UP: # up
-                    self.move_unit(self.player, [0, -10])
-                elif event.key == pygame.K_DOWN: # down
-                    self.move_unit(self.player, [0, 10])
-                elif event.key == pygame.K_LEFT: # left
-                    self.move_unit(self.player, [-10, 0])
-                elif event.key == pygame.K_RIGHT: # right
-                    self.move_unit(self.player, [10, 0])
-                
+            self.process_event(event)
+
+    def process_event(self, event):
+        if event.type == pygame.QUIT:
+            self.game_state = GameState.ENDED
+        elif event.type == pygame.KEYDOWN:
+            self.handle_key_event(event)
+
+    def handle_key_event(self, event):
+        key_movements = {
+            pygame.K_w: [0, -1],  # up
+            pygame.K_s: [0, 1],   # down
+            pygame.K_a: [-1, 0],  # left
+            pygame.K_d: [1, 0],   # right
+            # debug keys
+            pygame.K_UP: [0, -10],
+            pygame.K_DOWN: [0, 10],
+            pygame.K_LEFT: [-10, 0],
+            pygame.K_RIGHT: [10, 0],
+        }
+
+        if event.key in key_movements:
+            self.move_unit(self.player, key_movements[event.key])
+        elif event.key == pygame.K_ESCAPE:
+            self.game_state = GameState.NONE
 
     def move_unit(self, unit, position_change):
-        new_position = [unit.position[0] + position_change[0], unit.position[1] + position_change[1]]
+        new_position = [unit.position[0] + position_change[0],
+                        unit.position[1] + position_change[1]]
 
         # check if off map
         if new_position[0] < 0 or new_position[0] > (len(self.map.map_array[0]) - 1):

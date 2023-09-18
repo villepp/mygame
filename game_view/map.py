@@ -1,11 +1,8 @@
 import pygame
-from building import Building
 import config
 import math
-import utilities
-
+from building import Building
 from npc import Npc
-
 
 class Map:
     def __init__(self, screen):
@@ -18,104 +15,79 @@ class Map:
         self.exit_positions = []
 
     def load(self, file_name, player):
+        """Load the map configuration and tiles."""
         self.file_name = file_name
-        
         self.player = player
         self.objects = [player]
         
-        with open('maps/' + file_name + '.txt') as map_file:
-            for line in map_file:
-                tiles = []
-                for i in range(0, len(line) - 1, 2):
-                    tiles.append(line[i])
-                self.map_array.append(tiles)
+        # Read map tiles from file
+        with open(f'maps/{file_name}.txt') as map_file:
+            self.map_array = [list(line[::2]) for line in map_file]
             print(self.map_array)
-            
-            map_config = config.MAP_CONFIG[file_name]
-            
-            player.position = map_config['start_position'][:]
-            
-            for building_data in map_config["buildings"]:
-                building = Building(building_data['sprite'], building_data['position'], building_data['size'])
-                self.objects.append(building)
-                
-            for exit_position in map_config['exits']:
-                self.exit_positions.append(exit_position)
-                
+
+        # Load the map configuration (buildings, exits, etc.)
+        map_config = config.MAP_CONFIG[file_name]
+        player.position = map_config['start_position'][:]
+        self.objects.extend([Building(data['sprite'], data['position'], data['size']) for data in map_config["buildings"]])
+        self.exit_positions = map_config['exits']
+
     def load_room(self, map_name, room_name, player):
+        """Load room details and NPCs."""
         self.player = player
         self.objects = [player]
-        
         room_config = config.ROOM_CONFIG[map_name][str(room_name).zfill(2)]
-        self.player.position = room_config['start_position'][:]
-        self.player.player_exit_position = room_config['exit_position'][:]
+        player.position = room_config['start_position'][:]
         self.player_exit_position = room_config['exit_position'][:]
         
-        # create our NPCs
-        for npc_data in room_config['npcs']:
-            npc = Npc(npc_data['name'], npc_data['image'], npc_data['start_position'][0], npc_data['start_position'][1])
-            self.objects.append(npc)
-            
-        with open('rooms/' + str(map_name) + '/' + str(room_name).zfill(2) + '.txt') as room_file:
-            for line in room_file:
-                tiles = []
-                for i in range(0, len(line) - 1, 2):
-                    tiles.append(line[i])
-                self.map_array.append(tiles)
-            print(self.map_array)
+        # Add NPCs to the room
+        self.objects.extend([Npc(data['name'], data['image'], data['start_position'][0], data['start_position'][1]) for data in room_config['npcs']])
         
-        pass
-            
+        # Read room tiles from file
+        with open(f'rooms/{map_name}/{str(room_name).zfill(2)}.txt') as room_file:
+            self.map_array = [list(line[::2]) for line in room_file]
+            print(self.map_array)
+
     def render(self, screen, player):
+        """Render the map and its objects."""
         self.determine_camera(player)
         
-        y_pos = 0
-        for line in self.map_array:
-            x_pos = 0
-            for tile in line:
-                if tile not in map_tile_image:
-                    x_pos = x_pos + 1
-                    continue
-                image = map_tile_image[tile]
-                rect = pygame.Rect(x_pos * config.SCALE - (self.camera[0] * config.SCALE), y_pos * config.SCALE - (self.camera[1] * config.SCALE), config.SCALE, config.SCALE)
-                screen.blit(image, rect)
-                x_pos = x_pos + 1
-                
-            y_pos = y_pos + 1
-            
-        # draw all objects on map
-        for object in self.objects:
-            object.render(self.screen, self.camera)
+        # Render tiles on screen
+        for y, line in enumerate(self.map_array):
+            for x, tile in enumerate(line):
+                if tile in map_tile_image:
+                    image = map_tile_image[tile]
+                    rect = pygame.Rect(x * config.SCALE - self.camera[0] * config.SCALE, y * config.SCALE - self.camera[1] * config.SCALE, config.SCALE, config.SCALE)
+                    screen.blit(image, rect)
+        
+        # Render objects (like player, NPCs) on screen
+        for obj in self.objects:
+            obj.render(self.screen, self.camera)
 
     def determine_camera(self, player):
-        # y-axis
-        max_y_position = len(self.map_array) - config.SCREEN_HEIGHT / config.SCALE
-        y_position = player.position[1] - math.ceil(round(config.SCREEN_HEIGHT / config.SCALE / 2))
-        
-        if y_position <= max_y_position and y_position >= 0:
-            self.camera[1] = y_position
-        elif y_position < 0:
-            self.camera[1] = 0
+        """Determine camera position based on player position."""
+        self.camera[1] = self._determine_camera_axis(player.position[1], len(self.map_array), config.SCREEN_HEIGHT)
+        self.camera[0] = self._determine_camera_axis(player.position[0], len(self.map_array[0]), config.SCREEN_WIDTH)
+
+    def _determine_camera_axis(self, position, map_length, screen_length):
+        """Helper function to calculate camera axis position."""
+        max_position = map_length - screen_length / config.SCALE
+        current_position = position - math.ceil(screen_length / config.SCALE / 2)
+        if 0 <= current_position <= max_position:
+            return current_position
+        elif current_position < 0:
+            return 0
         else:
-            self.camera[1] = max_y_position
+            return max_position
             
-        # x-axis
-        max_x_position = len(self.map_array[0]) - config.SCREEN_WIDTH / config.SCALE
-        x_position = player.position[0] - math.ceil(round(config.SCREEN_WIDTH / config.SCALE / 2))
-        
-        if x_position <= max_x_position and x_position >= 0:
-            self.camera[0] = x_position
-        elif x_position < 0:
-            self.camera[0] = 0
-        else:
-            self.camera[0] = max_x_position
-            
-            
+# Dictionary of map tiles with their corresponding images
 map_tile_image = {
-    config.MAP_TILE_GRASS: pygame.transform.scale(pygame.image.load("imgs/grass1.png"), (config.SCALE, config.SCALE)),
-    config.MAP_TILE_WATER: pygame.transform.scale(pygame.image.load("imgs/water.png"), (config.SCALE, config.SCALE)),
-    config.MAP_TILE_ROAD: pygame.transform.scale(pygame.image.load("imgs/road.png"), (config.SCALE, config.SCALE)),
-    config.MAP_TILE_LAB_FLOOR: pygame.transform.scale(pygame.image.load("imgs/lab_tile.png"), (config.SCALE, config.SCALE)),
-    config.MAP_TILE_LAB_WALL: pygame.transform.scale(pygame.image.load("imgs/lab_wall.png"), (config.SCALE, config.SCALE)),
-    config.MAP_TILE_ROOM_EXIT: pygame.transform.scale(pygame.image.load("imgs/floor_mat.png"), (config.SCALE, config.SCALE))
+    key: pygame.transform.scale(pygame.image.load(value), (config.SCALE, config.SCALE))
+    for key, value in {
+        config.MAP_TILE_GRASS: "imgs/grass1.png",
+        config.MAP_TILE_WATER: "imgs/water.png",
+        config.MAP_TILE_ROAD: "imgs/road.png",
+        config.MAP_TILE_LAB_FLOOR: "imgs/lab_tile.png",
+        config.MAP_TILE_LAB_WALL: "imgs/lab_wall.png",
+        config.MAP_TILE_ROOM_EXIT: "imgs/floor_mat.png"
+    }.items()
 }

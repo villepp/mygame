@@ -4,7 +4,6 @@ import config
 from game_state import GameState
 from monsterfactory import MonsterFactory
 
-
 class PickMonsterEvent:
     def __init__(self, screen, game, player, monster):
         self.screen = screen
@@ -12,47 +11,34 @@ class PickMonsterEvent:
         self.player = player
         self.dialog = pygame.image.load("imgs/dialog.png")
         self.monster_factory = MonsterFactory()
-        
-        if monster.name == "monster_cage_starter_01":
-            self.monster = self.monster_factory.create_monster_index(1)
-        elif monster.name == "monster_cage_starter_02":
-            self.monster = self.monster_factory.create_monster_index(4)
-        elif monster.name == "monster_cage_starter_03":
-            self.monster = self.monster_factory.create_monster_index(7)
-        
-        self.cut = 0
-        self.max_cut = 0
-        
-    def load(self):
-        pass
-        
+        self.font = pygame.font.Font('fonts/PokemonGb.ttf', 20)
+
+        self.monster_mapping = {
+            "monster_cage_starter_01": 1,
+            "monster_cage_starter_02": 4,
+            "monster_cage_starter_03": 7
+        }
+
+        monster_index = self.monster_mapping.get(monster.name)
+        if monster_index:
+            self.monster = self.monster_factory.create_monster_index(monster_index)
+        else:
+            raise ValueError(f"Monster name {monster.name} not recognized.")
+
     def render(self):
-        if self.cut == 0:
-                self.render_scene_0()
-        elif self.cut == 1:
-                self.render_scene_1()
-        elif self.cut == 2:
-                self.render_scene_2()
-                
-    def render_scene_0(self):
         self.screen.blit(self.dialog, (0, 300))
         self.screen.blit(self.monster.image, (100, 100))
-        font = pygame.font.Font('fonts/PokemonGb.ttf', 20)
-        img = font.render("You picked..." + str(self.monster.name), True, config.BLACK)
-        self.screen.blit(img, (40, 350))
-        img = font.render("Are you sure? (y/n)", True, config.BLACK)
-        self.screen.blit(img, (40, 400))
-        pass
-    
-        
+
+        monster_text = self.font.render("You picked... " + str(self.monster.name), True, config.BLACK)
+        self.screen.blit(monster_text, (40, 350))
+
+        confirmation_text = self.font.render("Are you sure? (y/n)", True, config.BLACK)
+        self.screen.blit(confirmation_text, (40, 400))
+
     def update(self):
-        if self.cut > self.max_cut:
-            self.game.event = None
-            
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.game.game_state = GameState.ENDED
-            #     handle key events
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.game.game_state = GameState.ENDED
@@ -60,7 +46,4 @@ class PickMonsterEvent:
                     self.player.monsters.append(self.monster)
                     self.game.event = None
                 elif event.key == pygame.K_n:
-                    self.game.event = None
-                    
-            #    if event.key == pygame.K_RETURN:
-            #        self.cut = self.cut + 1
+                    self.game.event = None  # Optionally transition to a different event or screen
