@@ -11,7 +11,7 @@ MONSTERS = [
         "monster_type": "G",
     },
     {
-        "name": "chick",
+        "name": "lion",
         "index": 1,
         "level_start": 1,
         "base_health": 5,
@@ -20,7 +20,7 @@ MONSTERS = [
         "evolves_to": 2,
     },
     {
-        "name": "chicken",
+        "name": "goblo",
         "index": 2,
         "level_start": 5,
         "base_health": 5,
@@ -29,7 +29,7 @@ MONSTERS = [
         "evolves_to": 3,
     },
     {
-        "name": "elephant",
+        "name": "gorilla",
         "index": 3,
         "level_start": 15,
         "base_health": 5,
@@ -38,7 +38,7 @@ MONSTERS = [
         "evolves_to": None,
     },
     {
-        "name": "frog",
+        "name": "chameleon",
         "index": 4,
         "level_start": 1,
         "base_health": 5,
@@ -47,7 +47,7 @@ MONSTERS = [
         "evolves_to": 5,
     },
     {
-        "name": "snake",
+        "name": "dragon",
         "index": 5,
         "level_start": 5,
         "base_health": 5,
@@ -56,7 +56,7 @@ MONSTERS = [
         "evolves_to": 6,
     },
     {
-        "name": "crocodile",
+        "name": "slorp",
         "index": 6,
         "level_start": 15,
         "base_health": 5,
@@ -65,7 +65,7 @@ MONSTERS = [
         "evolves_to": None,
     },
     {
-        "name": "rabbit",
+        "name": "finsh",
         "index": 7,
         "level_start": 1,
         "base_health": 5,
@@ -74,7 +74,7 @@ MONSTERS = [
         "evolves_to": 8,
     },
     {
-        "name": "dog",
+        "name": "skeleton",
         "index": 8,
         "level_start": 5,
         "base_health": 5,
@@ -83,7 +83,7 @@ MONSTERS = [
         "evolves_to": 9,
     },
     {
-        "name": "rhino",
+        "name": "spider",
         "index": 9,
         "level_start": 15,
         "base_health": 5,

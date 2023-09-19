@@ -22,7 +22,7 @@ class Menu:
     def render_menu(self):
         """Renders the main menu on the screen."""
         self.screen.fill(config.BLACK)
-        rect = self.menu_image.get_rect()  # Using image's dimensions instead of hardcoding
+        rect = self.menu_image.get_rect()
         self.screen.blit(self.menu_image, rect)
 
     def handle_key_events(self, event):
